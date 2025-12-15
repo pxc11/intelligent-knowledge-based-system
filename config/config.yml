@@ -1,0 +1,3 @@
+jwt:
+  secret: "He6BTBkPB5wb6w1YX3wbQfrP1TFxdgPX"    
+  expire: 86400  # 秒
