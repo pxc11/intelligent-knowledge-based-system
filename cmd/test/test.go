@@ -1,12 +1,23 @@
 package main
 
-import (
-	"fmt"
+import "ikbs/lib/logger"
 
-	"ikbs/lib/config"
-)
+type A struct {
+	a int64
+}
+
+type B struct {
+	A A
+	b int64
+}
 
 func main() {
-	cfg, _ := config.LoadConfig()
-	fmt.Printf("%+v\n", cfg)
+	logger.Info("dwdwdwd")
+	aa := B{
+		A: A{
+			a: 1,
+		},
+		b: 2,
+	}
+	logger.Info(aa)
 }

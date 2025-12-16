@@ -1,11 +1,22 @@
 package basic
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 )
 
-func GetRootPath() (string, error) {
+var rootPath string
+
+func init() {
+	var err error
+	rootPath, err = initRootPath()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initRootPath() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -22,4 +33,8 @@ func GetRootPath() (string, error) {
 		}
 		dir = parent
 	}
+}
+
+func GetRootPath() string {
+	return rootPath
 }

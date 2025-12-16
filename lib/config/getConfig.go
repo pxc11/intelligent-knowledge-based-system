@@ -2,19 +2,28 @@ package config
 
 import (
 	"ikbs/lib/basic"
+	"log"
 
 	"github.com/spf13/viper"
 )
 
-func LoadConfig() (*Config, error) {
+var config *Config
+
+func init() {
+	var err error
+	config, err = initConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initConfig() (*Config, error) {
 	v := viper.New()
 
 	v.SetConfigType("yaml")
 
-	rootPath, err := basic.GetRootPath()
-	if err != nil {
-		return nil, err
-	}
+	rootPath := basic.GetRootPath()
+
 	v.SetConfigFile(rootPath + "/config/config.yml")
 
 	if err := v.ReadInConfig(); err != nil {
@@ -26,4 +35,8 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func LoadConfig() *Config {
+	return config
 }
