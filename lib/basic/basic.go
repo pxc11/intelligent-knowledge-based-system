@@ -8,12 +8,14 @@ import (
 
 var rootPath string
 
-func init() {
+func Init() {
 	var err error
+	//初始化根目录
 	rootPath, err = initRootPath()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
 
 func initRootPath() (string, error) {

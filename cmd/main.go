@@ -1,12 +1,18 @@
 package main
 
 import (
+	"ikbs/lib/basic"
+	"ikbs/lib/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+
+	basic.Init()
+	config.Init()
+
 	// 创建带默认中间件（日志与恢复）的 Gin 路由器
 	r := gin.Default()
 

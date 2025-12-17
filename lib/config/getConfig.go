@@ -9,7 +9,7 @@ import (
 
 var config *Config
 
-func init() {
+func Init() {
 	var err error
 	config, err = initConfig()
 	if err != nil {

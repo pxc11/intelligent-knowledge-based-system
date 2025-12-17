@@ -12,12 +12,13 @@ type B struct {
 }
 
 func main() {
-	logger.Info("dwdwdwd")
+
+	logger.Info("dwdwdwd", "dwdwd")
 	aa := B{
 		A: A{
 			a: 1,
 		},
 		b: 2,
 	}
-	logger.Info(aa)
+	logger.Error(aa, aa)
 }

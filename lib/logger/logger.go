@@ -2,127 +2,70 @@ package logger
 
 import (
 	"fmt"
+	"ikbs/lib/basic"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 )
 
-/************** level **************/
-
-type Level string
-
-const (
-	INFO    Level = "INFO"
-	WARNING Level = "WARNING"
-	ERROR   Level = "ERROR"
-)
-
-/************** rotating writer **************/
-
-type rotatingWriter struct {
-	mu       sync.Mutex
-	dir      string
-	currDate string
-	file     *os.File
+type currentLogger struct {
+	currentFilename string
+	file            *os.File
+	logger          *log.Logger
 }
 
-func newRotatingWriter(dir string) (*rotatingWriter, error) {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, err
-	}
-
-	w := &rotatingWriter{
-		dir: dir,
-	}
-	if err := w.rotateIfNeeded(); err != nil {
-		return nil, err
-	}
-	return w, nil
+var currentLogger1 = &currentLogger{
+	currentFilename: "",
+	file:            nil,
+	logger:          nil,
 }
 
-func (w *rotatingWriter) rotateIfNeeded() error {
-	date := time.Now().Format("2006-01-02")
+var lock sync.Mutex
 
-	if date == w.currDate && w.file != nil {
-		return nil
-	}
+func writeLog(level string, msg ...any) {
+	lock.Lock()
+	defer lock.Unlock()
+	logFileName := time.Now().Format("2006-01-02") + ".log"
+	if currentLogger1.currentFilename != logFileName {
+		if currentLogger1.file != nil {
+			err := currentLogger1.file.Close()
+			if err != nil {
+				log.Panic(err)
+			}
 
-	if w.file != nil {
-		_ = w.file.Close()
-	}
-
-	filename := filepath.Join(w.dir, "log-"+date+".log")
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-
-	w.currDate = date
-	w.file = file
-	return nil
-}
-
-func (w *rotatingWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if err := w.rotateIfNeeded(); err != nil {
-		return 0, err
-	}
-	return w.file.Write(p)
-}
-
-/************** logger **************/
-
-var (
-	std  *log.Logger
-	once sync.Once
-)
-
-func Init(logDir string) error {
-	var err error
-
-	once.Do(func() {
-		var writer *rotatingWriter
-		writer, err = newRotatingWriter(logDir)
-		if err != nil {
-			return
 		}
+		err := os.MkdirAll(basic.GetRootPath()+"/logs", 0755)
+		if err != nil {
+			log.Panic(err)
+		}
+		fileWriter, err := os.OpenFile(basic.GetRootPath()+"/"+logFileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Panic(err)
+		}
+		currentLogger1.file = fileWriter
 
-		mw := io.MultiWriter(os.Stdout, writer)
-
-		std = log.New(
-			mw,
+		currentLogger1.logger = log.New(
+			io.MultiWriter(os.Stdout, fileWriter),
 			"",
 			log.Ldate|log.Ltime|log.Lshortfile,
 		)
-	})
-
-	return err
-}
-
-func logWithLevel(level Level, v ...any) {
-	if std == nil {
-		panic("logger not initialized")
+		currentLogger1.currentFilename = logFileName
 	}
 
-	msg := fmt.Sprint(v...)
-	std.Print("[" + string(level) + "] " + msg)
+	sendMsg := fmt.Sprintf("%+v", msg)
+
+	currentLogger1.logger.Print("[" + level + "] " + sendMsg)
+
 }
 
-/************** public API **************/
-
-func Info(v ...any) {
-	logWithLevel(INFO, v...)
+func Warning(msg ...any) {
+	writeLog("warning", msg...)
 }
-
-func Warning(v ...any) {
-	logWithLevel(WARNING, v...)
+func Info(msg ...any) {
+	writeLog("info", msg...)
 }
-
-func Error(v ...any) {
-	logWithLevel(ERROR, v...)
+func Error(msg ...any) {
+	writeLog("error", msg...)
 }
