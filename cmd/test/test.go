@@ -1,6 +1,10 @@
 package main
 
-import "ikbs/lib/logger"
+import (
+	"ikbs/lib/basic"
+	"ikbs/lib/logger"
+	"time"
+)
 
 type A struct {
 	a int64
@@ -8,17 +12,22 @@ type A struct {
 
 type B struct {
 	A A
-	b int64
+	B int64
 }
 
 func main() {
+	basic.Init()
+	logger.Init()
 
 	logger.Info("dwdwdwd", "dwdwd")
 	aa := B{
 		A: A{
 			a: 1,
 		},
-		b: 2,
+		B: 2,
 	}
 	logger.Error(aa, aa)
+
+	time.Sleep(5 * time.Second)
+
 }
