@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ikbs/internal/router"
 	"ikbs/lib/basic"
 	"ikbs/lib/config"
 	"ikbs/lib/logger"
@@ -17,6 +18,9 @@ func main() {
 
 	// 创建带默认中间件（日志与恢复）的 Gin 路由器
 	r := gin.Default()
+
+	//注册路由
+	router.Register(r)
 
 	// 定义简单的 GET 路由
 	r.GET("/ping", func(c *gin.Context) {

@@ -1,6 +1,8 @@
 package JWT
 
 import (
+	"ikbs/lib/basic"
+	"ikbs/lib/logger"
 	"strings"
 	"time"
 
@@ -28,7 +30,7 @@ func GenerateToken(userId int64) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(appConfig.JWT.Secret)
+	return token.SignedString([]byte(appConfig.JWT.Secret))
 }
 
 // jwt中间件
@@ -36,7 +38,8 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth, err := c.Cookie("jwt-token")
 		if err != nil {
-
+			c.AbortWithStatusJSON(500, gin.H{"message": err.Error()})
+			return
 		}
 		if auth == "" {
 			c.AbortWithStatusJSON(401, gin.H{"msg": "missing token"})
@@ -47,17 +50,47 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(auth, "Bearer ")
 
 		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return []byte(config.LoadConfig().JWT.Secret), nil
 		})
 
-		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(401, gin.H{"msg": "invalid token"})
+		if err != nil {
+			c.AbortWithStatusJSON(401, gin.H{"msg": err.Error()})
 			return
 		}
 
+		if !token.Valid {
+			c.AbortWithStatusJSON(401, gin.H{"msg": jwt.ErrTokenNotValidYet.Error()})
+		}
+
 		// 保存用户信息
-		c.Set("user_id", claims.UserID)
+		c.Set("user_info", claims)
 		c.Next()
+
+		remaining := time.Until(claims.ExpiresAt.Time)
+		if remaining < 10*time.Minute {
+
+			err := GenerateTokenCookie(c, claims.UserId)
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+
+		}
 	}
+}
+
+func GenerateTokenCookie(c *gin.Context, userId int64) error {
+	newToken, err := GenerateToken(userId)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	c.SetCookie("jwt-token", newToken, int(config.LoadConfig().JWT.Expire), "/", "", basic.IsSecure(c), true)
+
+	return nil
 }

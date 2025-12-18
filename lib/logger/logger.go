@@ -74,7 +74,7 @@ func writeLog(level string, msg ...any) {
 		currentLogger1.logger = log.New(
 			io.MultiWriter(os.Stdout, fileWriter),
 			"",
-			log.Ldate|log.Ltime|log.Lshortfile,
+			log.Ldate|log.Ltime,
 		)
 		currentLogger1.currentFilename = logFileName
 	}
