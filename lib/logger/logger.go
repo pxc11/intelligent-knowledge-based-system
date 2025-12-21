@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +22,8 @@ type currentLogger struct {
 type logMessage struct {
 	level   string
 	message []any
+	file    string
+	line    int
 }
 
 func Init() {
@@ -34,8 +38,15 @@ var currentLogger1 = &currentLogger{
 	logger:          nil,
 }
 
-func pushMsg(msg *logMessage) {
-	channel <- msg
+func pushMsg(level string, msg ...any) {
+	_, file, line, _ := runtime.Caller(2)
+	message := &logMessage{
+		level:   level,
+		message: msg,
+		file:    file,
+		line:    line,
+	}
+	channel <- message
 }
 
 var once sync.Once
@@ -44,14 +55,16 @@ func writingLog() {
 	once.Do(func() {
 		go func() {
 			for msg := range channel {
-				writeLog(msg.level, msg.message...)
+				writeLog(msg)
 			}
 		}()
 
 	})
 }
 
-func writeLog(level string, msg ...any) {
+func writeLog(message *logMessage) {
+	level := message.level
+	msg := message.message
 	logFileName := time.Now().Format("2006-01-02") + ".log"
 	if currentLogger1.currentFilename != logFileName {
 		if currentLogger1.file != nil {
@@ -82,7 +95,7 @@ func writeLog(level string, msg ...any) {
 	if currentLogger1.logger == nil {
 		log.Panic("logger 不存在")
 	}
-	currentLogger1.logger.Print("[" + level + "] " + formatArgs(msg...))
+	currentLogger1.logger.Print("[" + level + "][ " + message.file + ":" + strconv.Itoa(message.line) + " ]" + formatArgs(msg...))
 
 }
 
@@ -98,14 +111,14 @@ func formatArgs(args ...any) string {
 }
 
 func Warning(msg ...any) {
-	pushMsg(&logMessage{level: "warning", message: msg})
+	pushMsg("warning", msg...)
 
 }
 func Info(msg ...any) {
-	pushMsg(&logMessage{level: "info", message: msg})
+	pushMsg("info", msg...)
 
 }
 func Error(msg ...any) {
-	pushMsg(&logMessage{level: "error", message: msg})
+	pushMsg("error", msg...)
 
 }

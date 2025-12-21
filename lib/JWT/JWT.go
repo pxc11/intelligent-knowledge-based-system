@@ -30,7 +30,12 @@ func GenerateToken(userId int64) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(appConfig.JWT.Secret))
+	jwtToken, err := token.SignedString([]byte(appConfig.JWT.Secret))
+	if err != nil {
+		return "", err
+	}
+	logger.Info("生成token", jwtToken)
+	return jwtToken, nil
 }
 
 // jwt中间件
@@ -38,7 +43,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth, err := c.Cookie("jwt-token")
 		if err != nil {
-			c.AbortWithStatusJSON(500, gin.H{"message": err.Error()})
+			c.AbortWithStatusJSON(401, gin.H{"msg": err.Error()})
 			return
 		}
 		if auth == "" {
@@ -68,7 +73,6 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 
 		// 保存用户信息
 		c.Set("user_info", claims)
-		c.Next()
 
 		remaining := time.Until(claims.ExpiresAt.Time)
 		if remaining < 10*time.Minute {
@@ -80,6 +84,8 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			}
 
 		}
+		c.Next()
+
 	}
 }
 
@@ -91,6 +97,5 @@ func GenerateTokenCookie(c *gin.Context, userId int64) error {
 	}
 
 	c.SetCookie("jwt-token", newToken, int(config.LoadConfig().JWT.Expire), "/", "", basic.IsSecure(c), true)
-
 	return nil
 }
