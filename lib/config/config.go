@@ -23,10 +23,13 @@ type JWTConfig struct {
 }
 
 type MySQLConfig struct {
-	Host     string
-	Port     int
-	DB       string
-	Password string
+	Host         string
+	Port         int
+	DB           string
+	Password     string
+	Username     string
+	MaxIdleConns int
+	MaxOpenConns int
 }
 
 type RedisConfig struct {

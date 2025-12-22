@@ -1,3 +1,11 @@
 jwt:
   secret: "He6BTBkPB5wb6w1YX3wbQfrP1TFxdgPX"    
   expire: 43200  # 秒
+mysql:
+  host: "109.206.247.197"
+  port: 3306
+  db: "ikbs"
+  password: "xiaohuzi007"
+  username: "root"
+  maxIdleConns: 5
+  maxOpenConns: 50  #连接池配置

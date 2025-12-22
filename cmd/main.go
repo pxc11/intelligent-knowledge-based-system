@@ -4,6 +4,7 @@ import (
 	"ikbs/internal/router"
 	"ikbs/lib/basic"
 	"ikbs/lib/config"
+	"ikbs/lib/db"
 	"ikbs/lib/logger"
 	"net/http"
 
@@ -15,6 +16,7 @@ func main() {
 	basic.Init()
 	config.Init()
 	logger.Init()
+	db.Init()
 
 	// 创建带默认中间件（日志与恢复）的 Gin 路由器
 	r := gin.Default()
