@@ -37,3 +37,7 @@ func Init() {
 func GetSqlDb() *sql.DB {
 	return sqlDb
 }
+
+func GetDb() *gorm.DB {
+	return db
+}

@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"ikbs/internal/model"
 	"ikbs/lib/basic"
 	"ikbs/lib/config"
 	"ikbs/lib/db"
 	"ikbs/lib/logger"
+
+	"gorm.io/gorm"
 )
 
 type A struct {
@@ -21,5 +25,12 @@ func main() {
 	config.Init()
 	logger.Init()
 	db.Init()
-
+	context2 := context.Background()
+	err := gorm.G[model.User](db.GetDb()).Create(context2, &model.User{
+		Username: "admin",
+		Password: "111",
+	})
+	if err != nil {
+		return
+	}
 }

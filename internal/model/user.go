@@ -9,3 +9,7 @@ type User struct {
 	Createtime time.Time `gorm:"autoCreateTime"`
 	Updatetime time.Time `gorm:"autoUpdateTime"`
 }
+
+func (User) TableName() string {
+	return "user"
+}

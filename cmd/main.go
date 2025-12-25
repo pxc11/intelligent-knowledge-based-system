@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ikbs/internal/myValidator"
 	"ikbs/internal/router"
 	"ikbs/lib/basic"
 	"ikbs/lib/config"
@@ -17,6 +18,7 @@ func main() {
 	config.Init()
 	logger.Init()
 	db.Init()
+	myValidator.Init()
 
 	// 创建带默认中间件（日志与恢复）的 Gin 路由器
 	r := gin.Default()
