@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"ikbs/internal/model"
 	"ikbs/internal/myValidator"
 	"ikbs/lib/JWT"
@@ -33,14 +34,15 @@ func GetUserInfo(c *gin.Context) {
 }
 
 type RegisterReq struct {
-	Username string `json:"username" binding:"required,alphanum,min=5,max=20"`
-	Password string `json:"password" binding:"required,min=6,max=64"`
+	Username string `json:"username" label:"用户名" binding:"required,alphanum,min=5,max=20"`
+	Password string `json:"password" label:"密码" binding:"required,min=6,max=64"`
 }
 
 func Register(c *gin.Context) {
 	var req RegisterReq
 	err := c.ShouldBindJSON(&req)
-	if errs, ok := err.(validator.ValidationErrors); ok {
+	var errs validator.ValidationErrors
+	if errors.As(err, &errs) {
 		c.JSON(200, gin.H{
 			"msg": errs[0].Translate(myValidator.GetTrans()),
 			"sts": false,
@@ -94,7 +96,7 @@ func Register(c *gin.Context) {
 
 	// 4. 返回结果（不要返回 password）
 	c.JSON(200, gin.H{
-		"sts": false,
+		"sts": true,
 		"msg": "注册成功",
 	})
 

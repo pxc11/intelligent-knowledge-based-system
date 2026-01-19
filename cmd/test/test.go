@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
-	"ikbs/internal/model"
+	"fmt"
 	"ikbs/lib/basic"
 	"ikbs/lib/config"
 	"ikbs/lib/db"
 	"ikbs/lib/logger"
-
-	"gorm.io/gorm"
+	"reflect"
 )
 
 type A struct {
@@ -25,12 +23,19 @@ func main() {
 	config.Init()
 	logger.Init()
 	db.Init()
-	context2 := context.Background()
-	err := gorm.G[model.User](db.GetDb()).Create(context2, &model.User{
-		Username: "admin",
-		Password: "111",
-	})
-	if err != nil {
-		return
+
+	type User struct {
+		Name string `json:"name,omitempty" binding:"required" a:"bb"`
 	}
+
+	t := reflect.TypeOf(User{})
+
+	field, _ := t.FieldByName("Name")
+
+	jsonTag := field.Tag.Get("json")
+	a := field.Tag.Get("a")
+
+	fmt.Println(jsonTag)
+	fmt.Println(a)
+
 }

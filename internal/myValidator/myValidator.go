@@ -1,6 +1,9 @@
 package myValidator
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/zh"
 	ut "github.com/go-playground/universal-translator"
@@ -18,16 +21,21 @@ func Init() {
 		trans, _ = uni.GetTranslator("zh")
 		_ = zhTranslations.RegisterDefaultTranslations(v, trans)
 
-		//自定义规则翻译
-		err := v.RegisterTranslation("alphanum", trans, func(ut ut.Translator) error {
-			return ut.Add("alphanum", "{0}只能包含字母和数字", true)
-		}, func(ut ut.Translator, fe validator.FieldError) string {
-			t, _ := ut.T("alphanum", fe.Field())
-			return t
+		//字段翻译
+		v.RegisterTagNameFunc(func(field reflect.StructField) string {
+			label := field.Tag.Get("label")
+			if label != "" {
+				return label
+			}
+
+			// fallback：没 label 再用 json
+			name := field.Tag.Get("json")
+			if name == "-" {
+				return ""
+			}
+			return strings.Split(name, ",")[0]
 		})
-		if err != nil {
-			return
-		}
+
 	}
 }
 
