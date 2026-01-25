@@ -1,25 +1,44 @@
 package controller
 
 import (
-	"errors"
 	"ikbs/internal/model"
-	"ikbs/internal/myValidator"
 	"ikbs/lib/JWT"
 	"ikbs/lib/db"
 	"ikbs/lib/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Login(c *gin.Context) {
-	err := JWT.GenerateTokenCookie(c, 1)
-	if err != nil {
-		c.JSON(500, gin.H{"msg": err.Error()})
+type LoginReq struct {
+	Username string `json:"username" label:"用户名" binding:"required"`
+	Password string `json:"password" label:"密码" binding:"required"`
+}
 
+func Login(c *gin.Context) {
+	req, isSuccess := ValidateRequest[LoginReq](c)
+	if !isSuccess {
+		return
+	}
+
+	var user model.User
+	if err := db.GetDb().Where("username = ?", req.Username).First(&user).Error; err != nil {
+		c.JSON(400, gin.H{"msg": "用户名或密码错误"})
+		return
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		c.JSON(400, gin.H{"msg": "用户名或密码错误"})
+		return
+	}
+
+	err = JWT.GenerateTokenCookie(c, int64(user.ID))
+	if err != nil {
+		logger.Error(err.Error())
+		c.JSON(500, gin.H{"msg": "系统错误"})
 	} else {
-		c.JSON(200, gin.H{"msg": "login success"})
+		c.JSON(200, gin.H{"msg": "登录成功"})
 	}
 }
 
@@ -39,36 +58,21 @@ type RegisterReq struct {
 }
 
 func Register(c *gin.Context) {
-	var req RegisterReq
-	err := c.ShouldBindJSON(&req)
-	var errs validator.ValidationErrors
-	if errors.As(err, &errs) {
-		c.JSON(200, gin.H{
-			"msg": errs[0].Translate(myValidator.GetTrans()),
-			"sts": false,
-		})
+	req, isSuccess := ValidateRequest[RegisterReq](c)
+	if !isSuccess {
 		return
 	}
-
-	if err != nil {
-		c.JSON(200, gin.H{
-			"msg": err.Error(),
-			"sts": false},
-		)
-		return
-	}
-
 	var count int64
 	if err := db.GetDb().Model(&model.User{}).
 		Where("username = ?", req.Username).
 		Count(&count).Error; err != nil {
 		logger.Error(err.Error())
-		c.JSON(200, gin.H{"sts": false, "msg": "系统错误"})
+		c.JSON(500, gin.H{"msg": "系统错误"})
 		return
 	}
 
 	if count > 0 {
-		c.JSON(200, gin.H{"sts": false, "msg": "用户名已经存在"})
+		c.JSON(400, gin.H{"msg": "用户名已经存在"})
 		return
 	}
 
@@ -78,7 +82,7 @@ func Register(c *gin.Context) {
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		c.JSON(200, gin.H{"msg": "系统错误1"})
+		c.JSON(500, gin.H{"msg": "系统错误1"})
 		return
 	}
 
@@ -90,13 +94,12 @@ func Register(c *gin.Context) {
 
 	if err := db.GetDb().Create(&user).Error; err != nil {
 		logger.Error(err.Error())
-		c.JSON(200, gin.H{"sts": false, "msg": "注册失败"})
+		c.JSON(500, gin.H{"msg": "注册失败"})
 		return
 	}
 
 	// 4. 返回结果（不要返回 password）
 	c.JSON(200, gin.H{
-		"sts": true,
 		"msg": "注册成功",
 	})
 
